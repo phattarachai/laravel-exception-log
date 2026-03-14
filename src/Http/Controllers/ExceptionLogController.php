@@ -4,15 +4,21 @@ namespace Phattarachai\ExceptionLog\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Gate;
 use Phattarachai\ExceptionLog\Models\ExceptionLog;
 
 class ExceptionLogController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            abort_unless(\Illuminate\Support\Facades\Gate::check('viewExceptionLogs'), 403);
+
+            return $next($request);
+        });
+    }
+
     public function index(Request $request)
     {
-        abort_unless(Gate::check('viewExceptionLogs'), 403);
-
         $query = ExceptionLog::query();
 
         if ($request->filled('status')) {
@@ -53,15 +59,11 @@ class ExceptionLogController extends Controller
 
     public function show(ExceptionLog $exceptionLog)
     {
-        abort_unless(Gate::check('viewExceptionLogs'), 403);
-
         return view('exception-log::show', ['log' => $exceptionLog]);
     }
 
     public function toggleMute(ExceptionLog $exceptionLog)
     {
-        abort_unless(Gate::check('viewExceptionLogs'), 403);
-
         $exceptionLog->update(['is_muted' => ! $exceptionLog->is_muted]);
 
         return back()->with('status', $exceptionLog->is_muted ? 'Exception muted.' : 'Exception unmuted.');
@@ -69,8 +71,6 @@ class ExceptionLogController extends Controller
 
     public function resolve(ExceptionLog $exceptionLog)
     {
-        abort_unless(Gate::check('viewExceptionLogs'), 403);
-
         $exceptionLog->update([
             'resolved_at' => $exceptionLog->resolved_at ? null : now(),
         ]);
@@ -82,8 +82,6 @@ class ExceptionLogController extends Controller
 
     public function destroy(ExceptionLog $exceptionLog)
     {
-        abort_unless(Gate::check('viewExceptionLogs'), 403);
-
         $exceptionLog->delete();
 
         return redirect()->route('exception-logs.index')
