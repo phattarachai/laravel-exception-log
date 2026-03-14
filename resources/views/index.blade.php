@@ -16,6 +16,54 @@
             </div>
         @endif
 
+        {{-- Filter Form --}}
+        <form action="{{ route('exception-logs.index') }}" method="GET" class="mb-6 bg-white shadow rounded-lg p-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Search message</label>
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search..."
+                        class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Exception class</label>
+                    <input type="text" name="class" value="{{ request('class') }}" list="exception-classes" placeholder="Class..."
+                        class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
+                    <datalist id="exception-classes">
+                        @foreach ($exceptionClasses as $class)
+                            <option value="{{ $class }}">
+                        @endforeach
+                    </datalist>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Status</label>
+                    <select name="status" class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="">All</option>
+                        <option value="unresolved" {{ request('status') === 'unresolved' ? 'selected' : '' }}>Unresolved</option>
+                        <option value="resolved" {{ request('status') === 'resolved' ? 'selected' : '' }}>Resolved</option>
+                        <option value="muted" {{ request('status') === 'muted' ? 'selected' : '' }}>Muted</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">From</label>
+                    <input type="date" name="from" value="{{ request('from') }}"
+                        class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">To</label>
+                    <input type="date" name="to" value="{{ request('to') }}"
+                        class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="mt-3 flex gap-2">
+                <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                    Filter
+                </button>
+                <a href="{{ route('exception-logs.index') }}" class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Reset
+                </a>
+            </div>
+        </form>
+
         <div class="bg-white shadow overflow-hidden rounded-lg">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -48,19 +96,29 @@
                                 {{ $log->last_seen_at->diffForHumans() }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center">
-                                @if ($log->is_muted)
+                                @if ($log->resolved_at)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">Resolved</span>
+                                @elseif ($log->is_muted)
                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">Muted</span>
                                 @else
                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">Active</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
-                                <form action="{{ route('exception-logs.toggle-mute', $log) }}" method="POST" class="inline">
-                                    @csrf
-                                    <button type="submit" class="text-gray-600 hover:text-gray-900">
-                                        {{ $log->is_muted ? 'Unmute' : 'Mute' }}
-                                    </button>
-                                </form>
+                                <div class="flex items-center justify-center gap-2">
+                                    <form action="{{ route('exception-logs.resolve', $log) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="text-blue-600 hover:text-blue-900">
+                                            {{ $log->resolved_at ? 'Reopen' : 'Resolve' }}
+                                        </button>
+                                    </form>
+                                    <form action="{{ route('exception-logs.toggle-mute', $log) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="text-gray-600 hover:text-gray-900">
+                                            {{ $log->is_muted ? 'Unmute' : 'Mute' }}
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty

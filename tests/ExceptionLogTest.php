@@ -78,42 +78,49 @@ class ExceptionLogTest extends TestCase
         $this->assertFalse($log->shouldNotify());
     }
 
-    public function test_should_notify_at_powers_of_ten(): void
+    public function test_should_notify_at_milestone_counts(): void
     {
         config(['exception-log.notify_email' => 'test@example.com']);
 
         $log = ExceptionLog::capture(new Exception('Test'));
 
+        // Power of 10
         $log->update(['occurrence_count' => 10]);
         $log->refresh();
         $this->assertTrue($log->shouldNotify());
 
+        // Every 100 at the hundreds level
         $log->update(['occurrence_count' => 100]);
         $log->refresh();
         $this->assertTrue($log->shouldNotify());
 
+        $log->update(['occurrence_count' => 200]);
+        $log->refresh();
+        $this->assertTrue($log->shouldNotify());
+
+        // Every 1000 at the thousands level
         $log->update(['occurrence_count' => 1000]);
+        $log->refresh();
+        $this->assertTrue($log->shouldNotify());
+
+        $log->update(['occurrence_count' => 2000]);
         $log->refresh();
         $this->assertTrue($log->shouldNotify());
     }
 
-    public function test_should_not_notify_at_non_power_of_ten(): void
+    public function test_should_not_notify_at_non_milestone_counts(): void
     {
         config(['exception-log.notify_email' => 'test@example.com']);
 
         $log = ExceptionLog::capture(new Exception('Test'));
 
-        $log->update(['occurrence_count' => 5]);
-        $log->refresh();
-        $this->assertFalse($log->shouldNotify());
+        $nonMilestones = [5, 15, 50, 99, 150, 250, 1500, 2500];
 
-        $log->update(['occurrence_count' => 15]);
-        $log->refresh();
-        $this->assertFalse($log->shouldNotify());
-
-        $log->update(['occurrence_count' => 50]);
-        $log->refresh();
-        $this->assertFalse($log->shouldNotify());
+        foreach ($nonMilestones as $count) {
+            $log->update(['occurrence_count' => $count]);
+            $log->refresh();
+            $this->assertFalse($log->shouldNotify(), "Count {$count} should not be a milestone");
+        }
     }
 
     public function test_short_class_returns_basename(): void
@@ -150,5 +157,119 @@ class ExceptionLogTest extends TestCase
 
         $this->assertContains($old->id, $prunableIds);
         $this->assertNotContains($recent->id, $prunableIds);
+    }
+
+    public function test_context_stored_on_capture(): void
+    {
+        $log = ExceptionLog::capture(new Exception('Test'));
+
+        $this->assertNotNull($log->context);
+        $this->assertIsArray($log->context);
+        $this->assertArrayHasKey('type', $log->context);
+    }
+
+    public function test_context_updated_on_recapture(): void
+    {
+        $exception = new Exception('Test');
+
+        $log1 = ExceptionLog::capture($exception);
+
+        $log2 = ExceptionLog::capture($exception);
+
+        $this->assertNotNull($log2->context);
+        $this->assertArrayHasKey('type', $log2->context);
+    }
+
+    public function test_new_exception_is_unresolved(): void
+    {
+        $log = ExceptionLog::capture(new Exception('Test'));
+
+        $this->assertNull($log->resolved_at);
+    }
+
+    public function test_resolved_exception_reopens_on_recapture(): void
+    {
+        $exception = new Exception('Test');
+
+        $log = ExceptionLog::capture($exception);
+        $log->update(['resolved_at' => now()]);
+
+        $recaptured = ExceptionLog::capture($exception);
+
+        $this->assertNull($recaptured->resolved_at);
+        $this->assertTrue($recaptured->wasReopened);
+    }
+
+    public function test_reopened_exception_triggers_notification(): void
+    {
+        config(['exception-log.notify_email' => 'test@example.com']);
+
+        $exception = new Exception('Test');
+
+        $log = ExceptionLog::capture($exception);
+        $log->update(['resolved_at' => now()]);
+
+        $recaptured = ExceptionLog::capture($exception);
+
+        $this->assertTrue($recaptured->shouldNotify());
+    }
+
+    public function test_notify_after_quiet_period(): void
+    {
+        config([
+            'exception-log.notify_email' => 'test@example.com',
+            'exception-log.re_alert_after_hours' => 24,
+        ]);
+
+        $exception = new Exception('Test');
+
+        $log = ExceptionLog::capture($exception);
+        $log->update(['last_seen_at' => now()->subHours(25)]);
+
+        $recaptured = ExceptionLog::capture($exception);
+
+        $this->assertTrue($recaptured->shouldNotify());
+    }
+
+    public function test_no_notify_within_quiet_period(): void
+    {
+        config([
+            'exception-log.notify_email' => 'test@example.com',
+            'exception-log.re_alert_after_hours' => 24,
+        ]);
+
+        $exception = new Exception('Test');
+
+        $log = ExceptionLog::capture($exception);
+        $log->update(['last_seen_at' => now()->subHours(2)]);
+
+        $recaptured = ExceptionLog::capture($exception);
+
+        // Count is 2 — not a milestone, and only 2h since last seen
+        $this->assertFalse($recaptured->shouldNotify());
+    }
+
+    public function test_unresolved_scope(): void
+    {
+        $unresolved = ExceptionLog::capture(new Exception('Unresolved'));
+        $resolved = ExceptionLog::capture(new \RuntimeException('Resolved'));
+        $resolved->update(['resolved_at' => now()]);
+
+        $results = ExceptionLog::query()->unresolved()->pluck('id')->toArray();
+
+        $this->assertContains($unresolved->id, $results);
+        $this->assertNotContains($resolved->id, $results);
+    }
+
+    public function test_resolved_scope(): void
+    {
+        $unresolved = ExceptionLog::capture(new Exception('Unresolved'));
+        $resolved = ExceptionLog::capture(new \RuntimeException('Resolved'));
+        $resolved->update(['resolved_at' => now()]);
+
+        $results = ExceptionLog::query()->resolved()->pluck('id')->toArray();
+
+        $this->assertContains($resolved->id, $results);
+        $this->assertNotContains($unresolved->id, $results);
     }
 }

@@ -14,6 +14,12 @@
                 <h1 class="mt-2 text-2xl font-bold text-gray-900">{{ $log->shortClass() }}</h1>
             </div>
             <div class="flex items-center gap-3">
+                <form action="{{ route('exception-logs.resolve', $log) }}" method="POST">
+                    @csrf
+                    <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-blue-300 text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50">
+                        {{ $log->resolved_at ? 'Reopen' : 'Resolve' }}
+                    </button>
+                </form>
                 <form action="{{ route('exception-logs.toggle-mute', $log) }}" method="POST">
                     @csrf
                     <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
@@ -65,7 +71,9 @@
                 <div class="px-6 py-4 grid grid-cols-3 gap-4 bg-gray-50">
                     <dt class="text-sm font-medium text-gray-500">Status</dt>
                     <dd class="text-sm col-span-2">
-                        @if ($log->is_muted)
+                        @if ($log->resolved_at)
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">Resolved</span>
+                        @elseif ($log->is_muted)
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">Muted</span>
                         @else
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">Active</span>
@@ -73,21 +81,55 @@
                     </dd>
                 </div>
                 <div class="px-6 py-4 grid grid-cols-3 gap-4">
+                    <dt class="text-sm font-medium text-gray-500">Resolution</dt>
+                    <dd class="text-sm text-gray-900 col-span-2">
+                        @if ($log->resolved_at)
+                            Resolved at {{ $log->resolved_at->format('Y-m-d H:i:s') }} ({{ $log->resolved_at->diffForHumans() }})
+                        @else
+                            Unresolved
+                        @endif
+                    </dd>
+                </div>
+                <div class="px-6 py-4 grid grid-cols-3 gap-4 bg-gray-50">
                     <dt class="text-sm font-medium text-gray-500">First Seen</dt>
                     <dd class="text-sm text-gray-900 col-span-2">{{ $log->first_seen_at->format('Y-m-d H:i:s') }} ({{ $log->first_seen_at->diffForHumans() }})</dd>
                 </div>
-                <div class="px-6 py-4 grid grid-cols-3 gap-4 bg-gray-50">
+                <div class="px-6 py-4 grid grid-cols-3 gap-4">
                     <dt class="text-sm font-medium text-gray-500">Last Seen</dt>
                     <dd class="text-sm text-gray-900 col-span-2">{{ $log->last_seen_at->format('Y-m-d H:i:s') }} ({{ $log->last_seen_at->diffForHumans() }})</dd>
                 </div>
                 @if ($log->last_notified_at)
-                    <div class="px-6 py-4 grid grid-cols-3 gap-4">
+                    <div class="px-6 py-4 grid grid-cols-3 gap-4 bg-gray-50">
                         <dt class="text-sm font-medium text-gray-500">Last Notified</dt>
                         <dd class="text-sm text-gray-900 col-span-2">{{ $log->last_notified_at->format('Y-m-d H:i:s') }} ({{ $log->last_notified_at->diffForHumans() }})</dd>
                     </div>
                 @endif
             </dl>
         </div>
+
+        @if ($log->context)
+            <div class="mt-6 bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-medium text-gray-900">Context</h2>
+                </div>
+                <div class="p-6">
+                    <dl class="divide-y divide-gray-100">
+                        @foreach ($log->context as $key => $value)
+                            <div class="py-2 grid grid-cols-3 gap-4">
+                                <dt class="text-sm font-medium text-gray-500">{{ $key }}</dt>
+                                <dd class="text-sm text-gray-900 col-span-2 font-mono">
+                                    @if (is_array($value))
+                                        <pre class="text-xs bg-gray-50 rounded p-2 overflow-x-auto">{{ json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                    @else
+                                        {{ $value }}
+                                    @endif
+                                </dd>
+                            </div>
+                        @endforeach
+                    </dl>
+                </div>
+            </div>
+        @endif
 
         @if ($log->trace)
             <div class="mt-6 bg-white shadow rounded-lg">

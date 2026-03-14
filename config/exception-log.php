@@ -1,5 +1,10 @@
 <?php
 
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
 return [
 
     /*
@@ -52,5 +57,32 @@ return [
     |
     */
     'route_middleware' => ['web', 'auth'],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ignored Exceptions
+    |--------------------------------------------------------------------------
+    |
+    | Exception classes listed here will not be captured.
+    | Uses instanceof, so subclasses are also ignored.
+    |
+    */
+    'ignore' => [
+        ValidationException::class,
+        AuthenticationException::class,
+        NotFoundHttpException::class,
+        ModelNotFoundException::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Re-alert After Quiet Period
+    |--------------------------------------------------------------------------
+    |
+    | Hours of silence after which a recurring exception triggers
+    | a new email notification, even if it's not at a milestone count.
+    |
+    */
+    're_alert_after_hours' => env('EXCEPTION_LOG_RE_ALERT_AFTER_HOURS', 24),
 
 ];

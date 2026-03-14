@@ -16,8 +16,10 @@ return new class extends Migration
             $table->string('file', 500);
             $table->unsignedInteger('line')->nullable();
             $table->text('trace')->nullable();
+            $table->json('context')->nullable();
             $table->unsignedInteger('occurrence_count')->default(1);
             $table->boolean('is_muted')->default(false);
+            $table->timestamp('resolved_at')->nullable();
             $table->timestamp('first_seen_at');
             $table->timestamp('last_seen_at');
             $table->timestamp('last_notified_at')->nullable();

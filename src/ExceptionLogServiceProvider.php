@@ -41,6 +41,12 @@ class ExceptionLogServiceProvider extends PackageServiceProvider
         $this->app->make(ExceptionHandler::class)
             ->reportable(function (Throwable $e) {
                 try {
+                    foreach (config('exception-log.ignore', []) as $ignoredClass) {
+                        if ($e instanceof $ignoredClass) {
+                            return;
+                        }
+                    }
+
                     $log = ExceptionLog::capture($e);
 
                     if ($log->shouldNotify()) {
@@ -48,7 +54,7 @@ class ExceptionLogServiceProvider extends PackageServiceProvider
 
                         (new AnonymousNotifiable)
                             ->route('mail', config('exception-log.notify_email'))
-                            ->notify(new ExceptionOccurred($log));
+                            ->notify(new ExceptionOccurred($log, $log->wasReopened));
                     }
                 } catch (Throwable) {
                     // Prevent infinite loops — silently ignore logging failures
