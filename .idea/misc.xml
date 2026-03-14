@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AIAssistantCustomInstructionsStorage">
+    <option name="instructions">
+      <map>
+        <entry key="AIAssistant.VCS.GenerateCommitMessage">
+          <value>
+            <AIAssistantStoredInstruction>
+              <option name="actionId" value="AIAssistant.VCS.GenerateCommitMessage" />
+              <option name="content" value="ตอบเป็นภาษาไทย&#10;หลีกเลี่ยงการบรรยายที่ยืดยาวหรือรายละเอียดที่ไม่จำเป็น&#10;เริ่มต้นด้วยย่อหน้าแรกที่สรุปเนื้อหา ไม่เกิน 100 ตัวอักษร&#10;เว้นบรรทัดว่างก่อนอธิบายรายละเอียดเพิ่มเติม&#10;ใช้ Bullet Points เพื่อแสดงรายละเอียด&#10;หลีกเลี่ยงการใช้ประโยคที่ขึ้นต้นด้วย &quot;ฉัน&quot; หรือ &quot;เรา&quot;&#10;ไม่ต้องสนใจการเปลี่ยนแปลงของช่องว่างในข้อความ" />
+            </AIAssistantStoredInstruction>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="FormatOnSaveOptions">
+    <option name="myRunOnSave" value="true" />
+  </component>
+  <component name="TimeTrackingManager">
+    <option name="totallyTimeSpent" value="971000" />
+  </component>
+</project>
