@@ -33,7 +33,7 @@ class ExceptionLogServiceProvider extends PackageServiceProvider
 
         $this->registerExceptionHandler();
 
-        Gate::define('viewExceptionLogs', fn ($user) => true);
+        Gate::define('viewExceptionLogs', fn ($user = null) => true);
     }
 
     private function registerExceptionHandler(): void

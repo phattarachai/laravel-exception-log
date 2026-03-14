@@ -11,7 +11,7 @@ class ExceptionLogController extends Controller
 {
     public function index(Request $request)
     {
-        Gate::authorize('viewExceptionLogs');
+        abort_unless(Gate::check('viewExceptionLogs'), 403);
 
         $query = ExceptionLog::query();
 
@@ -53,14 +53,14 @@ class ExceptionLogController extends Controller
 
     public function show(ExceptionLog $exceptionLog)
     {
-        Gate::authorize('viewExceptionLogs');
+        abort_unless(Gate::check('viewExceptionLogs'), 403);
 
         return view('exception-log::show', ['log' => $exceptionLog]);
     }
 
     public function toggleMute(ExceptionLog $exceptionLog)
     {
-        Gate::authorize('viewExceptionLogs');
+        abort_unless(Gate::check('viewExceptionLogs'), 403);
 
         $exceptionLog->update(['is_muted' => ! $exceptionLog->is_muted]);
 
@@ -69,7 +69,7 @@ class ExceptionLogController extends Controller
 
     public function resolve(ExceptionLog $exceptionLog)
     {
-        Gate::authorize('viewExceptionLogs');
+        abort_unless(Gate::check('viewExceptionLogs'), 403);
 
         $exceptionLog->update([
             'resolved_at' => $exceptionLog->resolved_at ? null : now(),
@@ -82,7 +82,7 @@ class ExceptionLogController extends Controller
 
     public function destroy(ExceptionLog $exceptionLog)
     {
-        Gate::authorize('viewExceptionLogs');
+        abort_unless(Gate::check('viewExceptionLogs'), 403);
 
         $exceptionLog->delete();
 
