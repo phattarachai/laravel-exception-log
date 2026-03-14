@@ -1,6 +1,20 @@
 # Laravel Exception Log
 
-Log exceptions to database with fingerprinted deduplication, smart email alerts (first occurrence + powers of 10), and mute capability.
+บันทึก Exception ลงฐานข้อมูลอัตโนมัติ พร้อมระบบแจ้งเตือนผ่านอีเมลอัจฉริยะ
+
+## คุณสมบัติ
+
+- **บันทึกอัตโนมัติ** — ดักจับทุก Exception ที่เกิดขึ้นในแอป Laravel แล้วบันทึกลง database โดยไม่ต้องแก้โค้ดใดๆ
+- **Fingerprint Deduplication** — Exception เดียวกัน (class + file + line เดียวกัน) จะไม่สร้าง record ซ้ำ แต่จะนับจำนวนครั้งที่เกิดขึ้นแทน
+- **แจ้งเตือนอีเมลอัจฉริยะ** — ส่งอีเมลแจ้งเตือนเฉพาะครั้งแรกที่เกิด exception ใหม่ และเมื่อจำนวนครั้งถึงหลัก 10 (ครั้งที่ 10, 100, 1000, ...) ไม่ส่งทุกครั้งจนอีเมลล้น
+- **Mute ได้** — ปิดการแจ้งเตือน exception ที่ไม่ต้องการติดตามได้
+- **หน้า Admin UI** — ดูรายการ exception ทั้งหมด, รายละเอียด stack trace, toggle mute, ลบ record ได้ผ่านเว็บ
+- **Pruning** — ลบ exception เก่าอัตโนมัติตามจำนวนวันที่กำหนด (default 90 วัน)
+
+## Requirements
+
+- PHP 8.2+
+- Laravel 11 หรือ 12
 
 ## Installation
 
@@ -8,14 +22,14 @@ Log exceptions to database with fingerprinted deduplication, smart email alerts 
 composer require phattarachai/laravel-exception-log
 ```
 
-Publish and run migrations:
+Publish และ run migration:
 
 ```bash
 php artisan vendor:publish --provider="Phattarachai\ExceptionLog\ExceptionLogServiceProvider" --tag="exception-log-migrations"
 php artisan migrate
 ```
 
-Optionally publish config:
+Publish config (optional):
 
 ```bash
 php artisan vendor:publish --provider="Phattarachai\ExceptionLog\ExceptionLogServiceProvider" --tag="exception-log-config"
@@ -23,7 +37,7 @@ php artisan vendor:publish --provider="Phattarachai\ExceptionLog\ExceptionLogSer
 
 ## Configuration
 
-Add to your `.env`:
+เพิ่มใน `.env`:
 
 ```env
 EXCEPTION_LOG_ENABLED=true
@@ -31,22 +45,22 @@ EXCEPTION_LOG_NOTIFY_EMAIL=your@email.com
 EXCEPTION_LOG_RETENTION_DAYS=90
 ```
 
-## Usage
+## การใช้งาน
 
-The package automatically captures all reported exceptions. No code changes needed.
+Package จะดักจับ exception ทั้งหมดให้อัตโนมัติ ไม่ต้องแก้โค้ดใดๆ เพียงติดตั้งและ migrate เท่านั้น
 
 ### Email Notifications
 
-Notifications are sent:
-- On **first occurrence** of a new exception
-- At **powers of 10** (10th, 100th, 1000th, ...)
-- Only if `notify_email` is configured and the exception is not muted
+ส่งอีเมลแจ้งเตือนเมื่อ:
+- เกิด exception **ใหม่ครั้งแรก**
+- จำนวนครั้งถึง **หลักสิบ** (10, 100, 1000, ...)
+- เฉพาะเมื่อตั้งค่า `notify_email` ไว้ และ exception ไม่ได้ถูก mute
 
 ### Admin UI
 
-Visit `/exception-logs` to view all logged exceptions. Requires authentication by default.
+เข้าดูได้ที่ `/exception-logs` (ต้อง login ก่อน)
 
-Customize the gate in your `AuthServiceProvider`:
+กำหนดสิทธิ์ผ่าน Gate:
 
 ```php
 Gate::define('viewExceptionLogs', fn ($user) => $user->isAdmin());
@@ -58,13 +72,13 @@ Gate::define('viewExceptionLogs', fn ($user) => $user->isAdmin());
 php artisan exception-log:prune
 ```
 
-Or use Laravel's built-in model pruning:
+หรือใช้ model pruning ของ Laravel:
 
 ```bash
 php artisan model:prune --model="Phattarachai\ExceptionLog\Models\ExceptionLog"
 ```
 
-### Publishing Views
+### Publish Views
 
 ```bash
 php artisan vendor:publish --provider="Phattarachai\ExceptionLog\ExceptionLogServiceProvider" --tag="exception-log-views"
